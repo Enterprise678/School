@@ -1,0 +1,380 @@
+import * as THREE from 'three';
+
+export const createJet = () => {
+  const jetGroup = new THREE.Group();
+  jetGroup.userData = { thrustLevel: 0 }; // For afterburner effect
+  
+  // F-22 Colors
+  const darkGray = 0x333333;
+  const lightGray = 0x777777;
+  const canopyColor = 0x8888ff;
+  const intakeColor = 0x111111;
+  
+  // Materials
+  const fuselageMaterial = new THREE.MeshPhongMaterial({ 
+    color: lightGray, 
+    flatShading: true,
+    shininess: 30 
+  });
+  const darkMaterial = new THREE.MeshPhongMaterial({ 
+    color: darkGray, 
+    flatShading: true,
+    shininess: 20 
+  });
+  const canopyMaterial = new THREE.MeshPhongMaterial({ 
+    color: canopyColor, 
+    transparent: true, 
+    opacity: 0.7, 
+    shininess: 100 
+  });
+  const intakeMaterial = new THREE.MeshPhongMaterial({ 
+    color: intakeColor, 
+    shininess: 30 
+  });
+  
+  // Main fuselage - more complex shape for F-22
+  const createFuselage = () => {
+    const fuselageGroup = new THREE.Group();
+    
+    // Forward fuselage (narrower)
+    const forwardGeometry = new THREE.CylinderGeometry(0.8, 1.2, 5, 8);
+    const forwardFuselage = new THREE.Mesh(forwardGeometry, fuselageMaterial);
+    forwardFuselage.position.z = -3.5;
+    forwardFuselage.rotation.x = Math.PI / 2;
+    fuselageGroup.add(forwardFuselage);
+    
+    // Mid fuselage (wider for intakes)
+    const midGeometry = new THREE.CylinderGeometry(1.2, 1.4, 4, 8);
+    const midFuselage = new THREE.Mesh(midGeometry, fuselageMaterial);
+    midFuselage.position.z = -0.5;
+    midFuselage.rotation.x = Math.PI / 2;
+    fuselageGroup.add(midFuselage);
+    
+    // Aft fuselage (tapers to engines)
+    const aftGeometry = new THREE.CylinderGeometry(1.4, 1, 5, 8);
+    const aftFuselage = new THREE.Mesh(aftGeometry, fuselageMaterial);
+    aftFuselage.position.z = 3.5;
+    aftFuselage.rotation.x = Math.PI / 2;
+    fuselageGroup.add(aftFuselage);
+    
+    // Chines (angular side edges characteristic of F-22)
+    const chineGeometry = new THREE.BoxGeometry(4, 0.3, 8);
+    const leftChine = new THREE.Mesh(chineGeometry, darkMaterial);
+    leftChine.position.set(-1.3, -0.4, 0);
+    leftChine.rotation.z = Math.PI / 8;
+    fuselageGroup.add(leftChine);
+    
+    const rightChine = new THREE.Mesh(chineGeometry, darkMaterial);
+    rightChine.position.set(1.3, -0.4, 0);
+    rightChine.rotation.z = -Math.PI / 8;
+    fuselageGroup.add(rightChine);
+    
+    return fuselageGroup;
+  };
+  
+  // Cockpit with angular canopy
+  const createCockpit = () => {
+    const cockpitGroup = new THREE.Group();
+    
+    // Main canopy
+    const canopyGeometry = new THREE.ConeGeometry(1.1, 3, 8, 1, true);
+    const canopy = new THREE.Mesh(canopyGeometry, canopyMaterial);
+    canopy.position.set(0, 0.5, -3.5);
+    canopy.rotation.x = -Math.PI / 2;
+    canopy.scale.set(1, 1, 0.8); // Flatten slightly
+    cockpitGroup.add(canopy);
+    
+    // Canopy frame
+    const frameGeometry = new THREE.TorusGeometry(1.1, 0.1, 8, 16, Math.PI);
+    const frame = new THREE.Mesh(frameGeometry, darkMaterial);
+    frame.position.set(0, 0.5, -3.5);
+    frame.rotation.x = Math.PI / 2;
+    cockpitGroup.add(frame);
+    
+    return cockpitGroup;
+  };
+  
+  // Wings - F-22 has distinctive swept wings with angular edges
+  const createWings = () => {
+    const wingsGroup = new THREE.Group();
+    
+    // Create wing shape
+    const wingShape = new THREE.Shape();
+    wingShape.moveTo(0, 0);
+    wingShape.lineTo(8, -6);
+    wingShape.lineTo(10, -6);
+    wingShape.lineTo(2.5, 0);
+    wingShape.lineTo(0, 0);
+    
+    const wingExtrudeSettings = {
+      steps: 1,
+      depth: 0.2,
+      bevelEnabled: true,
+      bevelThickness: 0.1,
+      bevelSize: 0.1,
+      bevelSegments: 2
+    };
+    
+    const wingGeometry = new THREE.ExtrudeGeometry(wingShape, wingExtrudeSettings);
+    
+    // Left wing
+    const leftWing = new THREE.Mesh(wingGeometry, fuselageMaterial);
+    leftWing.position.set(-1.2, -0.5, -1);
+    wingsGroup.add(leftWing);
+    
+    // Right wing (mirror)
+    const rightWing = new THREE.Mesh(wingGeometry, fuselageMaterial);
+    rightWing.position.set(1.2, -0.5, -1);
+    rightWing.scale.x = -1; // Mirror
+    wingsGroup.add(rightWing);
+    
+    return wingsGroup;
+  };
+  
+  // Twin tails characteristic of F-22
+  const createTails = () => {
+    const tailsGroup = new THREE.Group();
+    
+    // Create tail shape
+    const tailShape = new THREE.Shape();
+    tailShape.moveTo(0, 0);
+    tailShape.lineTo(0, 2.5);
+    tailShape.lineTo(-1.5, 2.5);
+    tailShape.lineTo(0.5, 0);
+    tailShape.lineTo(0, 0);
+    
+    const tailExtrudeSettings = {
+      steps: 1,
+      depth: 0.15,
+      bevelEnabled: true,
+      bevelThickness: 0.05,
+      bevelSize: 0.05,
+      bevelSegments: 2
+    };
+    
+    const tailGeometry = new THREE.ExtrudeGeometry(tailShape, tailExtrudeSettings);
+    
+    // Left vertical stabilizer
+    const leftTail = new THREE.Mesh(tailGeometry, fuselageMaterial);
+    leftTail.position.set(-1, 0, 3.5);
+    leftTail.rotation.y = Math.PI / 12; // Angle outward slightly
+    tailsGroup.add(leftTail);
+    
+    // Right vertical stabilizer
+    const rightTail = new THREE.Mesh(tailGeometry, fuselageMaterial);
+    rightTail.position.set(1, 0, 3.5);
+    rightTail.rotation.y = -Math.PI / 12; // Angle outward slightly
+    tailsGroup.add(rightTail);
+    
+    // Horizontal stabilizers (tilted like F-22)
+    const hStabShape = new THREE.Shape();
+    hStabShape.moveTo(0, 0);
+    hStabShape.lineTo(3.5, -1);
+    hStabShape.lineTo(3.5, -1.2);
+    hStabShape.lineTo(0, -0.5);
+    hStabShape.lineTo(0, 0);
+    
+    const hStabExtrudeSettings = {
+      steps: 1,
+      depth: 0.15,
+      bevelEnabled: true,
+      bevelThickness: 0.05,
+      bevelSize: 0.05,
+      bevelSegments: 2
+    };
+    
+    const hStabGeometry = new THREE.ExtrudeGeometry(hStabShape, hStabExtrudeSettings);
+    
+    // Left horizontal stabilizer
+    const leftHStab = new THREE.Mesh(hStabGeometry, fuselageMaterial);
+    leftHStab.position.set(0, 0, 2.5);
+    leftHStab.rotation.x = -Math.PI / 12; // Angle downward
+    tailsGroup.add(leftHStab);
+    
+    // Right horizontal stabilizer
+    const rightHStab = new THREE.Mesh(hStabGeometry, fuselageMaterial);
+    rightHStab.position.set(0, 0, 2.5);
+    rightHStab.rotation.x = -Math.PI / 12; // Angle downward
+    rightHStab.rotation.z = Math.PI; // Flip horizontally
+    rightHStab.scale.x = -1; // Mirror
+    tailsGroup.add(rightHStab);
+    
+    return tailsGroup;
+  };
+  
+  // Air intakes on sides
+  const createIntakes = () => {
+    const intakesGroup = new THREE.Group();
+    
+    const intakeGeometry = new THREE.BoxGeometry(1, 0.8, 1.5);
+    
+    // Left intake
+    const leftIntake = new THREE.Mesh(intakeGeometry, intakeMaterial);
+    leftIntake.position.set(-1.5, -0.3, -1);
+    intakesGroup.add(leftIntake);
+    
+    // Right intake
+    const rightIntake = new THREE.Mesh(intakeGeometry, intakeMaterial);
+    rightIntake.position.set(1.5, -0.3, -1);
+    intakesGroup.add(rightIntake);
+    
+    return intakesGroup;
+  };
+  
+  // Add all components
+  jetGroup.add(createFuselage());
+  jetGroup.add(createCockpit());
+  jetGroup.add(createWings());
+  jetGroup.add(createTails());
+  jetGroup.add(createIntakes());
+  
+  // Add engine nozzles
+  const createEngines = () => {
+    const enginesGroup = new THREE.Group();
+    
+    // Engine nozzle geometry - more realistic shape
+    const nozzleOuterGeometry = new THREE.CylinderGeometry(0.7, 0.8, 1, 16);
+    const nozzleInnerGeometry = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 16);
+    
+    const nozzleMaterial = new THREE.MeshPhongMaterial({
+      color: 0x555555,
+      shininess: 80,
+      metalness: 1.0,
+      roughness: 0.2
+    });
+    
+    // Left engine
+    const leftNozzleOuter = new THREE.Mesh(nozzleOuterGeometry, nozzleMaterial);
+    leftNozzleOuter.position.set(-0.8, 0, 5.5);
+    leftNozzleOuter.rotation.x = Math.PI / 2;
+    enginesGroup.add(leftNozzleOuter);
+    
+    const leftNozzleInner = new THREE.Mesh(nozzleInnerGeometry, nozzleMaterial);
+    leftNozzleInner.position.set(-0.8, 0, 5.6);
+    leftNozzleInner.rotation.x = Math.PI / 2;
+    enginesGroup.add(leftNozzleInner);
+    
+    // Right engine
+    const rightNozzleOuter = new THREE.Mesh(nozzleOuterGeometry, nozzleMaterial);
+    rightNozzleOuter.position.set(0.8, 0, 5.5);
+    rightNozzleOuter.rotation.x = Math.PI / 2;
+    enginesGroup.add(rightNozzleOuter);
+    
+    const rightNozzleInner = new THREE.Mesh(nozzleInnerGeometry, nozzleMaterial);
+    rightNozzleInner.position.set(0.8, 0, 5.6);
+    rightNozzleInner.rotation.x = Math.PI / 2;
+    enginesGroup.add(rightNozzleInner);
+    
+    return enginesGroup;
+  };
+  
+  jetGroup.add(createEngines());
+  
+  // Add engine glows (inside the nozzles)
+  const leftGlowGeometry = new THREE.CylinderGeometry(0.45, 0.4, 0.3, 16);
+  const leftGlowMaterial = new THREE.MeshBasicMaterial({ 
+    color: 0xff6600,
+    transparent: true,
+    opacity: 1
+  });
+  const leftGlow = new THREE.Mesh(leftGlowGeometry, leftGlowMaterial);
+  leftGlow.position.set(-0.8, 0, 5.2);
+  leftGlow.rotation.x = Math.PI / 2;
+  leftGlow.name = 'leftEngineGlow';
+  jetGroup.add(leftGlow);
+  
+  const rightGlowGeometry = new THREE.CylinderGeometry(0.45, 0.4, 0.3, 16);
+  const rightGlowMaterial = new THREE.MeshBasicMaterial({ 
+    color: 0xff6600,
+    transparent: true,
+    opacity: 1
+  });
+  const rightGlow = new THREE.Mesh(rightGlowGeometry, rightGlowMaterial);
+  rightGlow.position.set(0.8, 0, 5.2);
+  rightGlow.rotation.x = Math.PI / 2;
+  rightGlow.name = 'rightEngineGlow';
+  jetGroup.add(rightGlow);
+  // Afterburner effect (dual engines)
+  const createAfterburner = () => {
+    const afterburnerGroup = new THREE.Group();
+    afterburnerGroup.name = 'afterburner';
+    
+    // Create flame for left engine
+    const leftFlameGeometry = new THREE.ConeGeometry(0.5, 3, 16);
+    const flameMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff3300,
+      transparent: true,
+      opacity: 0.9
+    });
+    const leftFlame = new THREE.Mesh(leftFlameGeometry, flameMaterial);
+    leftFlame.position.set(-0.8, 0, 6.5);
+    leftFlame.rotation.x = Math.PI / 2;
+    afterburnerGroup.add(leftFlame);
+    
+    // Outer glow for left engine
+    const leftOuterFlameGeometry = new THREE.ConeGeometry(0.9, 5, 16);
+    const outerFlameMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff9900,
+      transparent: true,
+      opacity: 0.4
+    });
+    const leftOuterFlame = new THREE.Mesh(leftOuterFlameGeometry, outerFlameMaterial);
+    leftOuterFlame.position.set(-0.8, 0, 7.5);
+    leftOuterFlame.rotation.x = Math.PI / 2;
+    afterburnerGroup.add(leftOuterFlame);
+    
+    // Create flame for right engine
+    const rightFlameGeometry = new THREE.ConeGeometry(0.5, 3, 16);
+    const rightFlame = new THREE.Mesh(rightFlameGeometry, flameMaterial.clone());
+    rightFlame.position.set(0.8, 0, 6.5);
+    rightFlame.rotation.x = Math.PI / 2;
+    afterburnerGroup.add(rightFlame);
+    
+    // Outer glow for right engine
+    const rightOuterFlameGeometry = new THREE.ConeGeometry(0.9, 5, 16);
+    const rightOuterFlame = new THREE.Mesh(rightOuterFlameGeometry, outerFlameMaterial.clone());
+    rightOuterFlame.position.set(0.8, 0, 7.5);
+    rightOuterFlame.rotation.x = Math.PI / 2;
+    afterburnerGroup.add(rightOuterFlame);
+    // Heat distortion particles for both engines
+    const particlesCount = 80;
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlePositions = [];
+    
+    for (let i = 0; i < particlesCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 0.7;
+      // Alternate between left and right engines
+      const engineOffset = (i % 2 === 0) ? -0.8 : 0.8;
+      const x = Math.cos(angle) * radius + engineOffset;
+      const y = Math.sin(angle) * radius;
+      const z = 6 + Math.random() * 6;
+      
+      particlePositions.push(x, y, z);
+    }
+    
+    particlesGeometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(particlePositions, 3)
+    );
+    
+    const particlesMaterial = new THREE.PointsMaterial({
+      color: 0xffff00,
+      size: 0.2,
+      transparent: true,
+      opacity: 0.6
+    });
+    
+    const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+    afterburnerGroup.add(particles);
+    
+    // Initially invisible
+    afterburnerGroup.visible = false;
+    
+    return afterburnerGroup;
+  };
+  
+  const afterburner = createAfterburner();
+  jetGroup.add(afterburner);
+  return jetGroup;
+};
